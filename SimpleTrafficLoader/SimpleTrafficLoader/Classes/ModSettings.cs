@@ -11,6 +11,7 @@ namespace SimpleTrafficLoader
         // General
         public static bool UnloadAllGroupsWhenModUnloads;
         public static int MaxLoadedGroups;
+        public static string LoadGroupByDefault;
         public static bool ForceLoadModels;
 
         // Budget
@@ -23,6 +24,7 @@ namespace SimpleTrafficLoader
             // General
             UnloadAllGroupsWhenModUnloads = settings.GetBoolean("General", "UnloadAllGroupsWhenModUnloads", true);
             MaxLoadedGroups =               settings.GetInteger("General", "MaxLoadedGroups", 5);
+            LoadGroupByDefault =            settings.GetValue("General", "LoadGroup", "Default.json");
             ForceLoadModels =               settings.GetBoolean("General", "ForceLoadModels", false);
 
             // Budget

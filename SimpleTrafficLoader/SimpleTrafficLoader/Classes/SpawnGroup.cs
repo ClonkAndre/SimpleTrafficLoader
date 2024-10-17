@@ -15,14 +15,14 @@ namespace SimpleTrafficLoader.Classes
 
         #region Variables
         // Details
-        [ExcludeFromJsonSerialization()] public Guid ID;
+        [ExcludeFromJsonSerialization()] internal Guid ID;
         public string GroupName;
-        [ExcludeFromJsonSerialization()] public string GroupNameEdit;
+        [ExcludeFromJsonSerialization()] internal string GroupNameEdit;
 
         // Control
         public bool Disabled;
-        [ExcludeFromJsonSerialization()] public bool IsGroupActive;
-        [ExcludeFromJsonSerialization()] public bool WasUnloadRequested;
+        [ExcludeFromJsonSerialization()] internal bool IsGroupActive;
+        [ExcludeFromJsonSerialization()] internal bool WasUnloadRequested;
 
         // Lists
         public List<string> TargetIslands;
@@ -35,6 +35,10 @@ namespace SimpleTrafficLoader.Classes
         #region Constructor
         public SpawnGroup()
         {
+            // Generate random ID for this group
+            ID = Guid.NewGuid();
+
+            // Lists
             theNativeModels = new List<NativeModel>();
         }
         #endregion
@@ -43,11 +47,14 @@ namespace SimpleTrafficLoader.Classes
         public void Prepare()
         {
             // Generate random ID for this group
-            ID = Guid.NewGuid();
+            if (ID == Guid.Empty)
+                ID = Guid.NewGuid();
 
             GroupNameEdit = GroupName;
 
             // Check and add models that should be loaded in a seperate list
+            theNativeModels.Clear();
+
             for (int i = 0; i < ModelsToLoad.Count; i++)
             {
                 string model = ModelsToLoad[i];
