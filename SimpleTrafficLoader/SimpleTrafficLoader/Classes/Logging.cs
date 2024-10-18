@@ -5,7 +5,11 @@ namespace SimpleTrafficLoader.Classes
     internal class Logging
     {
 
+#if DEBUG
         public static bool EnableDebugLogging = true;
+#else
+        public static bool EnableDebugLogging = false;
+#endif
 
         public static void Log(string str, params object[] args)
         {

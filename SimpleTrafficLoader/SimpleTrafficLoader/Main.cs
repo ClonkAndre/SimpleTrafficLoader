@@ -150,6 +150,7 @@ namespace SimpleTrafficLoader
         private string currentZone;
 
         // Group stuff
+        private bool didAutomaticallyLoadDefaultGroup;
         private string currentlyLoadedGroupFileName;
         private bool preventGroupLoading;
 
@@ -160,6 +161,10 @@ namespace SimpleTrafficLoader
         #region Constructor
         public Main()
         {
+            // Lists
+            loadedSpawnGroups = new List<SpawnGroup>();
+            availableSpawnGroupFiles = new List<string>();
+
             // IV-SDK .NET stuff
             WaitTickInterval = 1000;
             Uninitialize += Main_Uninitialize;
@@ -171,51 +176,17 @@ namespace SimpleTrafficLoader
         #endregion
 
         #region Methods
-        private void LoadGroupFromFile(string fileName)
+        private void ReloadSettings()
         {
-            try
+            if (Settings.Load())
             {
-                if (loadedSpawnGroups != null)
-                    loadedSpawnGroups.Clear();
-
-                string path = string.Format("{0}\\Groups\\{1}", ScriptResourceFolder, fileName);
-
-                if (!File.Exists(path))
-                {
-                    if (fileName != "Default.json")
-                    {
-                        Logging.LogWarning("Could not find the '{0}' file which contains the vehicle groups that should load. Simple Traffic Loader might not work as expected. Please choose another group to load, or restore this group. Trying to load default group instead.", fileName);
-                        LoadGroupFromFile("Default.json");
-                    }
-                    else
-                    {
-                        Logging.LogWarning("Could not find the default group file (Default.json). Simple Traffic Loader might not work as expected as this group is required. Make sure to restore this group or redownload if necessary.", fileName);
-                    }
-
-                    return;
-                }
-
-                loadedSpawnGroups = Helper.ConvertJsonStringToObject<List<SpawnGroup>>(File.ReadAllText(path));
-
-                if (loadedSpawnGroups.Count == 0)
-                {
-                    Logging.LogWarning("No groups were loaded.");
-                }
-                else
-                {
-                    // Prepare loaded groups
-                    loadedSpawnGroups.ForEach(x => x.Prepare());
-
-                    Logging.Log("Loaded {0} groups!", loadedSpawnGroups.Count);
-                }
-
-                currentlyLoadedGroupFileName = fileName;
+                ModSettings.Load(Settings);
+                Logging.Log("Settings file of Simple Traffic Loader was reloaded!");
             }
-            catch (Exception ex)
-            {
-                Logging.LogError("Failed to load group '{0}'. Details: {1}", fileName, ex);
-            }
+            else
+                Logging.LogWarning("Could not reload the settings file of Simple Traffic Loader! File might not exist.");
         }
+
         private void SaveCurrentlyLoadedGroupToFile()
         {
             try
@@ -383,15 +354,8 @@ namespace SimpleTrafficLoader
             if (group == null)
                 return;
 
-            // Create unload lambda action
-            Action groupUnloadAction = () =>
-            {
-                // Unload models of this group
-                group.UnloadModels();
-            };
-
-            // Unload group instantly
-            groupUnloadAction.Invoke();
+            // Unload models of this group
+            group.UnloadModels();
         }
 
         private void LoadGroups(string forZone)
@@ -662,6 +626,56 @@ namespace SimpleTrafficLoader
         #endregion
 
         #region Functions
+        private bool LoadGroupFromFile(string fileName)
+        {
+            try
+            {
+                if (loadedSpawnGroups != null)
+                    loadedSpawnGroups.Clear();
+
+                string path = string.Format("{0}\\Groups\\{1}", ScriptResourceFolder, fileName);
+
+                if (!File.Exists(path))
+                {
+                    if (fileName != "Default.json")
+                    {
+                        Logging.LogWarning("Could not find the '{0}' file which contains the vehicle groups that should load. Simple Traffic Loader might not work as expected. Please choose another group to load, or restore this group. Trying to load default group instead.", fileName);
+                        return LoadGroupFromFile("Default.json");
+                    }
+                    else
+                    {
+                        Logging.LogWarning("Could not find the default group file (Default.json). Simple Traffic Loader might not work as expected as this group is required. Make sure to restore this group or redownload if necessary.", fileName);
+                    }
+
+                    return false;
+                }
+
+                loadedSpawnGroups = Helper.ConvertJsonStringToObject<List<SpawnGroup>>(File.ReadAllText(path));
+
+                if (loadedSpawnGroups.Count == 0)
+                {
+                    Logging.LogWarning("No groups were loaded.");
+                }
+                else
+                {
+                    // Prepare loaded groups
+                    loadedSpawnGroups.ForEach(x => x.Prepare());
+
+                    Logging.Log("Loaded {0} groups!", loadedSpawnGroups.Count);
+                }
+
+                currentlyLoadedGroupFileName = fileName;
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logging.LogError("Failed to load group '{0}'. Details: {1}", fileName, ex);
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Will check the "Groups" folder for available groups and adds them to a list of available groups.
         /// </summary>
@@ -679,7 +693,7 @@ namespace SimpleTrafficLoader
 
                 if (files.Length == 0)
                 {
-                    Logging.LogWarning("There are no spawn groups available. The mod will abort now. Redownload if neccessary.");
+                    Logging.LogWarning("There are no spawn groups available.");
                     return false;
                 }
 
@@ -840,7 +854,7 @@ namespace SimpleTrafficLoader
 
                     // If no matching island for area found then return otherwise continue with area check
                     if (matches == 0)
-                        return false;
+                        return nonEqualCheck;
                 }
 
                 // Check if specified neighborhoods match
@@ -880,11 +894,7 @@ namespace SimpleTrafficLoader
         private void Main_Initialized(object sender, EventArgs e)
         {
             // Check and add available spawn groups
-            if (!CheckAvailableSpawnGroups())
-            {
-                Abort();
-                return;
-            }
+            CheckAvailableSpawnGroups();
 
             // Load settings
             ModSettings.Load(Settings);
@@ -906,16 +916,20 @@ namespace SimpleTrafficLoader
             {
                 if (ImGuiIV.BeginTabBar("SimpleTrafficLoaderTabBar"))
                 {
+#if DEBUG
                     DebugTabItem();
+#endif
                     GroupsTabItem();
+                    BudgetTabItem();
+                    SettingsTabItem();
                 }
                 ImGuiIV.EndTabBar();
             }
             ImGuiIV.End();
         }
+#if DEBUG
         private void DebugTabItem()
         {
-#if DEBUG
             if (ImGuiIV.BeginTabItem("DEBUG##SimpleTrafficLoaderTI"))
             {
                 ImGuiIV.SeparatorText("Debugging");
@@ -923,7 +937,8 @@ namespace SimpleTrafficLoader
                 ImGuiIV.TextUnformatted("Current Day State: {0}", NativeWorld.GetDayState());
 
                 ImGuiIV.Spacing();
-                ImGuiIV.SeparatorText("Lists");
+                ImGuiIV.SeparatorText("Groups");
+                ImGuiIV.TextUnformatted("Did Automatically Load Default Group: {0}", didAutomaticallyLoadDefaultGroup);
                 ImGuiIV.TextUnformatted("Added Groups: {0}", loadedSpawnGroups.Count);
 
                 ImGuiIV.Spacing();
@@ -939,8 +954,9 @@ namespace SimpleTrafficLoader
 
                 ImGuiIV.EndTabItem();
             }
-#endif
         }
+#endif
+
         private void GroupsTabItem()
         {
             if (ImGuiIV.BeginTabItem("Groups##SimpleTrafficLoaderTI"))
@@ -964,7 +980,7 @@ namespace SimpleTrafficLoader
                 ImGuiIV.Spacing();
                 ImGuiIV.SeparatorText("The Groups");
 
-                ImGuiIV.TextUnformatted("Available groups to load");
+                ImGuiIV.TextUnformatted("Available group files to load");
 
                 ImGuiIV.HelpMarker(string.Format("Lists all group files which are located within the 'Groups' directory.{0}" +
                     "Clicking on an item in this list will load the group from file.", Environment.NewLine));
@@ -976,7 +992,11 @@ namespace SimpleTrafficLoader
                         string groupFileName = availableSpawnGroupFiles[i];
 
                         if (ImGuiIV.Selectable(groupFileName))
-                            LoadGroupFromFile(groupFileName);
+                        {
+                            // If loading failed, reload available group files
+                            if (!LoadGroupFromFile(groupFileName))
+                                CheckAvailableSpawnGroups();
+                        }
                     }
 
                     ImGuiIV.EndCombo();
@@ -987,10 +1007,13 @@ namespace SimpleTrafficLoader
                 if (ImGuiIV.Button("Refresh"))
                     CheckAvailableSpawnGroups();
 
-                if (ImGuiIV.Button("Save currently loaded group to file"))
-                    SaveCurrentlyLoadedGroupToFile();
-
                 ImGuiIV.Spacing(2);
+
+                if (loadedSpawnGroups.Count != 0)
+                {
+                    if (ImGuiIV.Button("Save currently loaded group to file"))
+                        SaveCurrentlyLoadedGroupToFile();
+                }
 
                 if (ImGuiIV.Button("Create new group"))
                     loadedSpawnGroups.Add(new SpawnGroup());
@@ -1218,6 +1241,40 @@ namespace SimpleTrafficLoader
             }
             
         }
+        private void BudgetTabItem()
+        {
+            if (ImGuiIV.BeginTabItem("Budget##SimpleTrafficLoaderTI"))
+            {
+                ImGuiIV.TextUnformatted("Current Vehicle Budget: {0} bytes {1}", IVStreaming.VehicleModelBudget, ModSettings.AutomaticallyDetermineVehicleBudget ? "(Automatically determined)" : "");
+
+                ImGuiIV.EndTabItem();
+            }
+        }
+        private void SettingsTabItem()
+        {
+            if (ImGuiIV.BeginTabItem("Settings##SimpleTrafficLoaderTI"))
+            {
+                if (ImGuiIV.Button("Reload Settings"))
+                    ReloadSettings();
+
+                ImGuiIV.SeparatorText("The Settings");
+
+                ImGuiIV.Spacing();
+                ImGuiIV.TextUnformatted("General");
+
+                ImGuiIV.CheckBox("UnloadAllGroupsWhenModUnloads", ref ModSettings.UnloadAllGroupsWhenModUnloads);
+                ImGuiIV.SliderInt("MaxLoadedGroups", ref ModSettings.MaxLoadedGroups, 0, 100);
+                ImGuiIV.InputText("LoadGroupByDefault", ref ModSettings.LoadGroupByDefault);
+                ImGuiIV.CheckBox("ForceLoadModels", ref ModSettings.ForceLoadModels);
+
+                ImGuiIV.Spacing();
+                ImGuiIV.TextUnformatted("Budget");
+
+                ImGuiIV.CheckBox("AutomaticallyDetermineVehicleBudget", ref ModSettings.AutomaticallyDetermineVehicleBudget);
+
+                ImGuiIV.EndTabItem();
+            }
+        }
 
         private void Main_WaitTick(object sender, EventArgs e)
         {
@@ -1247,8 +1304,11 @@ namespace SimpleTrafficLoader
                 return;
 
             // Load groups if not loaded yet
-            if (loadedSpawnGroups == null)
+            if (!didAutomaticallyLoadDefaultGroup)
+            {
                 LoadGroupFromFile(ModSettings.LoadGroupByDefault);
+                didAutomaticallyLoadDefaultGroup = true;
+            }
 
             // Get player stuff
             int playerIndex = CONVERT_INT_TO_PLAYERINDEX(GET_PLAYER_ID());
