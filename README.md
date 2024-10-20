@@ -1,5 +1,7 @@
 # Simple Traffic Loader
-This is a simple traffic loader for GTA IV which aims to eliminate the famous taxi bug while also delivering some extra features.
+This mod increases the variety of vehicles on the streets of Liberty City, making traffic more diverse and realistic.  
+It enhances the gameplay by ensuring you encounter a wider range of cars, adding freshness and immersion to your experience.  
+The traffic loader of your choice. Now better.  
 
 ## Features
 - Custom vehicle loading groups.  
@@ -10,9 +12,8 @@ This is a simple traffic loader for GTA IV which aims to eliminate the famous ta
 - [ClonksCodingLib.GTAIV](https://github.com/ClonkAndre/ClonksCodingLib.GTAIV)
 
 ## Other Links
-GTAForums: TODO  
-GTAInside (ONLY OLD VERSION FOR NOW): TODO  
-LCPDFR.com (ONLY OLD VERSION FOR NOW): TODO  
+[GTAForums](https://gtaforums.com/topic/999197-simple-traffic-loader/)  
+[GTAInside](https://www.gtainside.com/gta4/mods/157022-simple-traffic-loader-new-update/)  
 
 ## How to Contribute
 ⚠ The 1.0 and 1.1 versions were built using a private SDK.  
