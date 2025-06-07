@@ -31,11 +31,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ClonksCodingLib.GTAIV, Version=1.9.0.38745, Culture=neutral, processorArchitecture=x86">
-      <HintPath>..\packages\ClonksCodingLib.GTAIV.1.9.0.38745\lib\net472\ClonksCodingLib.GTAIV.dll</HintPath>
+    <Reference Include="ClonksCodingLib.GTAIV, Version=2.0.0.41377, Culture=neutral, processorArchitecture=x86">
+      <HintPath>..\packages\ClonksCodingLib.GTAIV.2.0.0.41377\lib\net472\ClonksCodingLib.GTAIV.dll</HintPath>
     </Reference>
-    <Reference Include="IVSDKDotNetWrapper, Version=1.7.0.0, Culture=neutral, processorArchitecture=x86">
-      <HintPath>..\packages\IVSDKDotNetWrapper.1.7.0\lib\net472\IVSDKDotNetWrapper.dll</HintPath>
+    <Reference Include="IVSDKDotNetWrapper, Version=1.9.1.0, Culture=neutral, processorArchitecture=x86">
+      <HintPath>..\packages\IVSDKDotNetWrapper.1.9.1\lib\net472\IVSDKDotNetWrapper.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
